@@ -38,7 +38,8 @@ func ParseCompositeActions(root string) ([]CompositeAction, error) {
 				if runs, ok := raw["runs"].(map[string]any); ok && runs["using"] == "composite" {
 					name, nameOk := raw["name"].(string)
 					description, descOk := raw["description"].(string)
-
+					// TODO: name and desc, are optional on valid composite actions
+					// should handle it, but for now treat it as invalid
 					if !nameOk || !descOk {
 						return nil
 					}
