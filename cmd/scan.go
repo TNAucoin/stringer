@@ -8,7 +8,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/tnaucoin/stringer/internal/gitfetcher"
+	"github.com/tnaucoin/stringer/internal/auth"
+	"github.com/tnaucoin/stringer/internal/remote"
 	"github.com/tnaucoin/stringer/internal/store"
 	"github.com/tnaucoin/stringer/parser"
 	"github.com/tnaucoin/stringer/types"
@@ -20,6 +21,7 @@ var (
 	forceScan  bool
 	repo       string
 	ref        string
+	token      string
 )
 
 // scanCmd represents the scan command
@@ -31,11 +33,17 @@ var scanCmd = &cobra.Command{
 		var actions []types.CompositeAction
 		root := args[0]
 		if repo != "" {
-			opts := gitfetcher.Options{
+			opts := remote.Options{
 				Repo: repo,
 				Ref:  ref,
 			}
-			repoActions, err := gitfetcher.FetchCompositeActionsFromRepo(opts)
+			userToken, err := auth.ResolveGithubToken(token)
+			if err != nil {
+				fmt.Printf("failed to resolve github token: %v\n", err)
+				os.Exit(1)
+			}
+			gitFetch := remote.NewGithubFetcher(userToken)
+			repoActions, err := gitFetch.FetchCompositeActionsFromRepo(opts)
 			if err != nil {
 				fmt.Printf("failed to fetch github repo %s with ref: %s: %v\n", opts.Repo, opts.Ref, err)
 				os.Exit(1)
@@ -86,5 +94,6 @@ func init() {
 	scanCmd.Flags().BoolVar(&forceScan, "force", false, "Force cache refresh")
 	scanCmd.Flags().StringVar(&repo, "repo", "", "Github repo to scan composite actions from (my-org/my-repo)")
 	scanCmd.Flags().StringVar(&ref, "ref", "main", "Git ref to use when scanning a Github repo (e.g. branch, tag")
+	scanCmd.Flags().StringVar(&token, "token", "", "Github token to use when scanning a Github repo")
 	rootCmd.AddCommand(scanCmd)
 }

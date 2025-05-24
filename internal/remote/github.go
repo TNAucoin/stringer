@@ -1,4 +1,4 @@
-package gitfetcher
+package remote
 
 import (
 	"fmt"
@@ -12,12 +12,22 @@ import (
 
 const githubRawURL = "https://raw.githubusercontent.com"
 
+type Fetcher struct {
+	Token string
+}
+
+func NewGithubFetcher(token string) *Fetcher {
+	return &Fetcher{
+		Token: token,
+	}
+}
+
 type Options struct {
 	Repo string
 	Ref  string
 }
 
-func FetchCompositeActionsFromRepo(opts Options) ([]types.CompositeAction, error) {
+func (f *Fetcher) FetchCompositeActionsFromRepo(opts Options) ([]types.CompositeAction, error) {
 	if opts.Repo == "" {
 		return nil, fmt.Errorf("repo is required")
 	}
@@ -32,7 +42,7 @@ func FetchCompositeActionsFromRepo(opts Options) ([]types.CompositeAction, error
 	var actions []types.CompositeAction
 
 	for _, path := range paths {
-		data, err := fetchFileFromGithub(opts.Repo, opts.Ref, path)
+		data, err := f.fetchFileFromGithub(opts.Repo, opts.Ref, path)
 		if err != nil {
 			log.Printf("warning: fetch failed for %s: %v", path, err)
 			continue
@@ -48,7 +58,7 @@ func FetchCompositeActionsFromRepo(opts Options) ([]types.CompositeAction, error
 	return actions, nil
 }
 
-func fetchFileFromGithub(repo, ref, path string) ([]byte, error) {
+func (f *Fetcher) fetchFileFromGithub(repo, ref, path string) ([]byte, error) {
 	url := fmt.Sprintf("%s/%s/%s/%s", githubRawURL, repo, ref, path)
 	resp, err := http.Get(url)
 	if err != nil {
