@@ -5,21 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/tnaucoin/stringer/types"
 	"gopkg.in/yaml.v3"
 )
 
-type CompositeAction struct {
-	Name        string         `json:"name"`
-	Description string         `json:"description"`
-	Inputs      map[string]any `json:"inputs"`
-	Outputs     map[string]any `json:"outputs"`
-	Path        string         `json:"-"`
-}
-
-// ParseCompositeActions scans a directory for composite GitHub Actions
-func ParseCompositeActions(root string) ([]CompositeAction, error) {
-	var actions []CompositeAction
-
+func ParseCompositeActions(root string) ([]types.CompositeAction, error) {
+	var actions []types.CompositeAction
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -29,44 +20,60 @@ func ParseCompositeActions(root string) ([]CompositeAction, error) {
 			if err != nil {
 				return err
 			}
-
-			var raw map[string]any
-			if err := yaml.Unmarshal(data, &raw); err != nil {
-				return nil // skip invalid YAML
-			}
-
-			if raw["runs"] != nil {
-				if runs, ok := raw["runs"].(map[string]any); ok && runs["using"] == "composite" {
-					name, nameOk := raw["name"].(string)
-					description, descOk := raw["description"].(string)
-					// TODO: name and desc, are optional on valid composite actions
-					// should handle it, but for now treat it as invalid
-					if !nameOk || !descOk {
-						return nil
-					}
-
-					action := CompositeAction{
-						Name:        name,
-						Description: description,
-						Path:        path,
-					}
-
-					if v, ok := raw["inputs"].(map[string]any); ok {
-						fmt.Println("Found input...")
-						action.Inputs = v
-					}
-
-					if v, ok := raw["outputs"].(map[string]any); ok {
-						fmt.Println("found output...")
-						action.Outputs = v
-					}
-
-					actions = append(actions, action)
-				}
+			action, err := ParseCompositeActionFromBytes(data, path)
+			if err != nil {
+				// TODO: log errors
+			} else {
+				actions = append(actions, action)
 			}
 		}
 		return nil
 	})
-
 	return actions, err
+}
+
+// ParseCompositeActions scans a directory for composite GitHub Actions
+func ParseCompositeActionFromBytes(data []byte, path string) (types.CompositeAction, error) {
+	var raw map[string]any
+	if err := yaml.Unmarshal(data, &raw); err != nil {
+		return types.CompositeAction{}, fmt.Errorf("invalid yaml file") // skip invalid YAML
+	}
+
+	runs, ok := raw["runs"].(map[string]any)
+	if !ok || runs["using"] != "composite" {
+		return types.CompositeAction{}, fmt.Errorf("not a composite action")
+	}
+
+	name := getString(raw["name"])
+	description := getString(raw["description"])
+	// TODO: name and desc, are optional on valid composite actions
+	// should handle it, but for now treat it as invalid
+	if name == "" || description == "" {
+		return types.CompositeAction{}, fmt.Errorf("the composite action must have a name, and description")
+	}
+
+	action := types.CompositeAction{
+		Name:        name,
+		Description: description,
+		Path:        path,
+	}
+
+	if v, ok := raw["inputs"].(map[string]any); ok {
+		fmt.Println("Found input...")
+		action.Inputs = v
+	}
+
+	if v, ok := raw["outputs"].(map[string]any); ok {
+		fmt.Println("found output...")
+		action.Outputs = v
+	}
+
+	return action, nil
+}
+
+func getString(v any) string {
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return ""
 }

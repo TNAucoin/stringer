@@ -9,15 +9,15 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/tnaucoin/stringer/parser"
+	"github.com/tnaucoin/stringer/types"
 )
 
 type CacheFile struct {
-	Hash    string                   `json:"hash"`
-	Actions []parser.CompositeAction `json:"actions"`
+	Hash    string                  `json:"hash"`
+	Actions []types.CompositeAction `json:"actions"`
 }
 
-func SaveActionsWithHash(actions []parser.CompositeAction, rootdir, filepath string) error {
+func SaveActionsWithHash(actions []types.CompositeAction, rootdir, filepath string) error {
 	hash, err := hashDirectory(rootdir)
 	if err != nil {
 		return fmt.Errorf("failed to hash directory: %w", err)
@@ -50,7 +50,7 @@ func IsCacheValid(rootDir, cachePath string) (bool, error) {
 	return currentHash == cache.Hash, nil
 }
 
-func SaveActions(actions []parser.CompositeAction, filepath string) error {
+func SaveActions(actions []types.CompositeAction, filepath string) error {
 	data, err := json.MarshalIndent(actions, "", "	")
 	if err != nil {
 		return fmt.Errorf("failed to marshal actions: %w", err)

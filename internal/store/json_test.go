@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/tnaucoin/stringer/parser"
+	"github.com/tnaucoin/stringer/types"
 )
 
 func TestSaveActionsWithHash(t *testing.T) {
@@ -15,7 +15,7 @@ func TestSaveActionsWithHash(t *testing.T) {
 	cachePath := filepath.Join(tmpDir, "cache.json")
 
 	// Create test actions
-	actions := []parser.CompositeAction{
+	actions := []types.CompositeAction{
 		{
 			Name:        "Test Action",
 			Description: "A test action",
@@ -60,7 +60,7 @@ func TestIsCacheValid(t *testing.T) {
 	constantHash := "mockhash123456789"
 	cache := CacheFile{
 		Hash: constantHash,
-		Actions: []parser.CompositeAction{
+		Actions: []types.CompositeAction{
 			{
 				Name:        "Test Action",
 				Description: "A test action",
@@ -117,7 +117,7 @@ func TestSaveAndLoadActions(t *testing.T) {
 	filePath := filepath.Join(tmpDir, "actions.json")
 
 	// Create test actions
-	actions := []parser.CompositeAction{
+	actions := []types.CompositeAction{
 		{
 			Name:        "Action 1",
 			Description: "First test action",
@@ -146,7 +146,7 @@ func TestSaveAndLoadActions(t *testing.T) {
 	}
 
 	// Unmarshal directly to actions slice
-	var loadedActions []parser.CompositeAction
+	var loadedActions []types.CompositeAction
 	if err := json.Unmarshal(data, &loadedActions); err != nil {
 		t.Fatalf("Failed to unmarshal actions: %v", err)
 	}
@@ -168,7 +168,7 @@ func TestLoadCache(t *testing.T) {
 	// Create a test cache file
 	cache := CacheFile{
 		Hash: "testhash123",
-		Actions: []parser.CompositeAction{
+		Actions: []types.CompositeAction{
 			{
 				Name:        "Cached Action",
 				Description: "A cached action",

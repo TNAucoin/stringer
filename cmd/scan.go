@@ -8,14 +8,18 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/tnaucoin/stringer/internal/gitfetcher"
 	"github.com/tnaucoin/stringer/internal/store"
 	"github.com/tnaucoin/stringer/parser"
+	"github.com/tnaucoin/stringer/types"
 )
 
 var (
 	outputPath string
 	cachePath  string
 	forceScan  bool
+	repo       string
+	ref        string
 )
 
 // scanCmd represents the scan command
@@ -24,11 +28,27 @@ var scanCmd = &cobra.Command{
 	Short: "scan a directory for Github CompositeActions",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		var actions []types.CompositeAction
 		root := args[0]
-		actions, err := parser.ParseCompositeActions(root)
-		if err != nil {
-			fmt.Println("Error: ", err)
-			os.Exit(1)
+		if repo != "" {
+			opts := gitfetcher.Options{
+				Repo: repo,
+				Ref:  ref,
+			}
+			repoActions, err := gitfetcher.FetchCompositeActionsFromRepo(opts)
+			if err != nil {
+				fmt.Printf("failed to fetch github repo %s with ref: %s: %v\n", opts.Repo, opts.Ref, err)
+				os.Exit(1)
+			}
+			actions = append(actions, repoActions...)
+		} else {
+			localFileActions, err := parser.ParseCompositeActions(root)
+
+			if err != nil {
+				fmt.Println("Error: ", err)
+				os.Exit(1)
+			}
+			actions = append(actions, localFileActions...)
 		}
 
 		if len(actions) == 0 {
@@ -64,5 +84,7 @@ func init() {
 	scanCmd.Flags().StringVarP(&outputPath, "output", "o", "", "Path to write parsed actions to JSON")
 	scanCmd.Flags().StringVar(&cachePath, "cache", ".stringercache.json", "Path to store internal action cache")
 	scanCmd.Flags().BoolVar(&forceScan, "force", false, "Force cache refresh")
+	scanCmd.Flags().StringVar(&repo, "repo", "", "Github repo to scan composite actions from (my-org/my-repo)")
+	scanCmd.Flags().StringVar(&ref, "ref", "main", "Git ref to use when scanning a Github repo (e.g. branch, tag")
 	rootCmd.AddCommand(scanCmd)
 }
