@@ -8,7 +8,14 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/tnaucoin/stringer/internal/store"
 	"github.com/tnaucoin/stringer/parser"
+)
+
+var (
+	outputPath string
+	cachePath  string
+	forceScan  bool
 )
 
 // scanCmd represents the scan command
@@ -34,19 +41,28 @@ var scanCmd = &cobra.Command{
 			fmt.Printf("   Inputs: %v\n", a.Inputs)
 			fmt.Printf("   Outputs: %v\n\n", a.Outputs)
 		}
+
+		if outputPath != "" {
+			if err := store.SaveActions(actions, outputPath); err != nil {
+				fmt.Println("Failed to write output JSON:", err)
+				os.Exit(1)
+			}
+		} else {
+			valid, _ := store.IsCacheValid(root, cachePath)
+			if !valid || forceScan {
+				if err := store.SaveActionsWithHash(actions, root, cachePath); err != nil {
+					fmt.Println("failed to write interal cache:", err)
+					os.Exit(1)
+				}
+				fmt.Println("Updating internal actions cache")
+			}
+		}
 	},
 }
 
 func init() {
+	scanCmd.Flags().StringVarP(&outputPath, "output", "o", "", "Path to write parsed actions to JSON")
+	scanCmd.Flags().StringVar(&cachePath, "cache", ".stringercache.json", "Path to store internal action cache")
+	scanCmd.Flags().BoolVar(&forceScan, "force", false, "Force cache refresh")
 	rootCmd.AddCommand(scanCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// scanCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// scanCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

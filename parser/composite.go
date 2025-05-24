@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -49,12 +50,17 @@ func ParseCompositeActions(root string) ([]CompositeAction, error) {
 						Description: description,
 						Path:        path,
 					}
-					if v, ok := raw["Inputs"].(map[string]any); ok {
+
+					if v, ok := raw["inputs"].(map[string]any); ok {
+						fmt.Println("Found input...")
 						action.Inputs = v
 					}
-					if v, ok := raw["Outputs"].(map[string]any); ok {
+
+					if v, ok := raw["outputs"].(map[string]any); ok {
+						fmt.Println("found output...")
 						action.Outputs = v
 					}
+
 					actions = append(actions, action)
 				}
 			}
