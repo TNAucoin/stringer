@@ -85,7 +85,7 @@ func LoadCache(filepath string) (*CacheFile, error) {
 	return &cache, nil
 }
 
-func hashDirectory(rootDir string) (string, error) {
+var hashDirectory = func(rootDir string) (string, error) {
 	var entries []string
 
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
